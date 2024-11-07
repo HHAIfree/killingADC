@@ -29,8 +29,6 @@
         let paddleWidth = 100;
         let paddleHeight = 20;
         let paddleX = (canvas.width - paddleWidth) / 2;
-        let rightPressed = false;
-        let leftPressed = false;
         
         let ballRadius = 10;
         let x = canvas.width / 2;
@@ -59,12 +57,14 @@
 
         document.addEventListener("keydown", keyDownHandler);
         document.addEventListener("keyup", keyUpHandler);
+        document.addEventListener("mousemove", mouseMoveHandler);
+        document.addEventListener("touchmove", touchMoveHandler);
 
         function keyDownHandler(e) {
             if (e.key === "Right" || e.key === "ArrowRight") {
-                rightPressed = true;
+                paddleX += 7;
             } else if (e.key === "Left" || e.key === "ArrowLeft") {
-                leftPressed = true;
+                paddleX -= 7;
             }
         }
 
@@ -73,6 +73,20 @@
                 rightPressed = false;
             } else if (e.key === "Left" || e.key === "ArrowLeft") {
                 leftPressed = false;
+            }
+        }
+
+        function mouseMoveHandler(e) {
+            let relativeX = e.clientX - canvas.offsetLeft;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddleX = relativeX - paddleWidth / 2;
+            }
+        }
+
+        function touchMoveHandler(e) {
+            let relativeX = e.touches[0].clientX - canvas.offsetLeft;
+            if (relativeX > 0 && relativeX < canvas.width) {
+                paddleX = relativeX - paddleWidth / 2;
             }
         }
 
@@ -162,12 +176,6 @@
                     alert("Game Over! Your score: " + score);
                     document.location.reload();
                 }
-            }
-
-            if (rightPressed && paddleX < canvas.width - paddleWidth) {
-                paddleX += 7;
-            } else if (leftPressed && paddleX > 0) {
-                paddleX -= 7;
             }
 
             x += dx;
