@@ -33,22 +33,25 @@
         let ballRadius = 10;
         let x = canvas.width / 2;
         let y = canvas.height - 30;
-        let dx = 2;
-        let dy = -2;
+        let dx = 3;
+        let dy = -3;
         
         const brickRowCount = 3;
-        const brickColumnCount = 6;
-        const brickWidth = 100;
+        const brickColumnCount = 5;
+        const brickWidth = 150;
         const brickHeight = 30;
         const brickPadding = 10;
-        const brickOffsetTop = 50;
-        const brickOffsetLeft = 30;
+        const brickOffsetTop = 0;
+        const brickOffsetLeft = 50;
         let bricks = [];
+        let blueLabels = ["CD33", "CD30", "HER2", "CD22", "CD79b", "Nectin-4", "Trop-2", "BCMA", "CD19", "FRα", "Tissue Factor"];
+        let blueIndex = 0;
+
         for (let c = 0; c < brickColumnCount; c++) {
             bricks[c] = [];
             for (let r = 0; r < brickRowCount; r++) {
-                let brickType = Math.random() < 0.5 ? 'red' : 'blue';
-                let label = brickType === 'red' ? 'SEA' : ["CD33", "CD30", "HER2", "CD22", "CD79b", "Nectin-4", "Trop-2", "BCMA", "CD19", "FRα", "Tissue Factor"][Math.floor(Math.random() * 11)];
+                let brickType = (r < 2) ? 'red' : 'blue';
+                let label = brickType === 'red' ? 'SEA' : blueLabels[blueIndex++];
                 bricks[c][r] = { x: 0, y: 0, status: 1, type: brickType, label: label };
             }
         }
