@@ -17,6 +17,10 @@
             font-size: 24px;
             margin: 10px;
         }
+        #timer {
+            font-size: 24px;
+            margin: 10px;
+        }
         .restart-button {
             padding: 10px 20px;
             font-size: 18px;
@@ -35,6 +39,7 @@
 <body>
     <div id="gameContainer">
         <div id="score">Score: 0</div>
+        <div id="timer">Time Left: 2:00</div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <button class="restart-button" onclick="restartGame()">Play Again</button>
     </div>
@@ -44,6 +49,7 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
+        const timerElement = document.getElementById('timer');
         const restartButton = document.querySelector('.restart-button');
 
         const targets = [];
@@ -51,6 +57,7 @@
         let gameOver = false;
         let explosionParticles = [];
         let gameTime = 0;
+        const totalGameTime = 60 * 60 * 2; // 2 minutes in frames
 
         const shooter = {
             x: canvas.width / 2,
@@ -94,7 +101,7 @@
         function createTarget() {
             const timeInMinutes = gameTime / (60 * 60);
             const bombChance = Math.min(0.5, 0.2 + (timeInMinutes * 0.1));
-            const baseSpeed = 1 + Math.random() * 2 + (timeInMinutes * 0.5);
+            const baseSpeed = 3 + Math.random() * 4 + (timeInMinutes * 0.5); // Increased base speed for more challenge
             
             if (Math.random() > bombChance) {
                 return {
@@ -260,13 +267,18 @@
 
             if (!gameOver) {
                 gameTime++;
-                if (Math.random() < 0.02) {
+                if (Math.random() < 0.05) { // Increased spawn rate for more challenge
                     targets.push(createTarget());
                 }
                 updateBullet();
                 updateTargets();
 
-                if (gameTime >= 60 * 60 * 2) { // 2 minutes
+                const timeLeft = Math.max(0, totalGameTime - gameTime);
+                const minutes = Math.floor(timeLeft / (60 * 60));
+                const seconds = Math.floor((timeLeft / 60) % 60);
+                timerElement.textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+
+                if (gameTime >= totalGameTime) { // 2 minutes
                     gameOver = true;
                     setTimeout(() => {
                         alert(`Time's up! Your final score is: ${score}. Would you like to play again?`);
@@ -301,6 +313,7 @@
             explosionParticles.length = 0;
             bullet.active = false;
             scoreElement.textContent = 'Score: 0';
+            timerElement.textContent = 'Time Left: 2:00';
             restartButton.style.display = 'none';
         }
 
