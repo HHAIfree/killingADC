@@ -26,6 +26,8 @@
     </style>
 </head>
 <body>
+    <h1>Killing ADC</h1>
+    <h2>Designed by Helen S Huang</h2>
     <div id="gameContainer">
         <div id="score">Score: 0</div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -87,7 +89,7 @@
         function createTarget() {
             const timeInMinutes = gameTime / (60 * 60);
             const bombChance = Math.min(0.7, 0.3 + (timeInMinutes * 0.1));
-            const baseSpeed = 1 + Math.random() * 2 + (timeInMinutes * 0.5);
+            const baseSpeed = 1 + Math.random() * 2 + (timeInMinutes * 1.0);
             
             if (Math.random() > Math.max(bombChance, 0.3)) {
                 return {
@@ -260,7 +262,7 @@
 
             if (!gameOver) {
                 gameTime++;
-                if (Math.random() < 0.02) {
+                if (Math.random() < 0.02 + (timeInMinutes * 0.01)) {
                     targets.push(createTarget());
                 }
                 updateBullet();
