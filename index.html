@@ -32,7 +32,7 @@
         
         <div id="score">Score: 0 <span id="timer" style="color: red;">Time Left: 2:00</span></div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <button id="startButton" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 24px;" onclick="startGame()">Start Game</button>
+        <button id="startButton" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 30px 50px; font-size: 30px;" onclick="startGame()">Start Game</button>
         <button class="restart-button" onclick="restartGame()">Play Again</button>
     </div>
 
@@ -47,6 +47,7 @@
         let gameOver = false;
         let startTime;
         let gameStarted = false;
+        let firstLoop = true;
         let timeInMinutes = 0;
         const gameDuration = 2 * 60 * 1000; // 2 minutes in milliseconds
         let explosionParticles = [];
@@ -267,6 +268,12 @@
             document.getElementById('startButton').style.display = 'none';
             startTime = Date.now();
             gameStarted = true;
+            firstLoop = false;
+            restartButton.style.display = 'none';
+        }
+            document.getElementById('startButton').style.display = 'none';
+            startTime = Date.now();
+            gameStarted = true;
         }
         
         function gameLoop() {
@@ -286,7 +293,7 @@
             }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if (!gameOver && gameStarted) {
+            if (!gameOver && gameStarted && !firstLoop) {
                 gameTime++;
                 if (Math.random() < 0.05 + (timeInMinutes * 0.05)) {
                     targets.push(createTarget());
@@ -296,7 +303,9 @@
             }
 
             if (gameStarted) {
+                if (gameStarted) {
                 drawSlingshot();
+            }
             }
             drawBullet();
             drawTargets();
