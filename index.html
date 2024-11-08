@@ -29,7 +29,7 @@
     <h1>Killing ADC</h1>
     <h2>Designed by Helen S Huang</h2>
     <div id="gameContainer">
-        <div id="score">Score: 0</div>
+        <div id="score">Score: 0 <span id="timer" style="color: red;">Time Left: 2:00</span></div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
         <button class="restart-button" onclick="restartGame()">Play Again</button>
     </div>
@@ -43,6 +43,8 @@
         const targets = [];
         let score = 0;
         let gameOver = false;
+        let startTime = Date.now();
+        const gameDuration = 2 * 60 * 1000; // 2 minutes in milliseconds
         let explosionParticles = [];
         let gameTime = 0;
 
@@ -88,8 +90,8 @@
 
         function createTarget() {
             const timeInMinutes = gameTime / (60 * 60);
-            const bombChance = Math.min(0.7, 0.3 + (timeInMinutes * 0.1));
-            const baseSpeed = 1 + Math.random() * 2 + (timeInMinutes * 1.0);
+            const bombChance = Math.min(0.7, 0.3 + (timeInMinutes * 0.2));
+            const baseSpeed = 1 + Math.random() * 2 + (timeInMinutes * 2.0);
             
             if (Math.random() > Math.max(bombChance, 0.3)) {
                 return {
@@ -258,11 +260,25 @@
         }
 
         function gameLoop() {
+            // Update timer
+            const elapsedTime = Date.now() - startTime;
+            const timeLeft = Math.max(0, gameDuration - elapsedTime);
+            const minutes = Math.floor(timeLeft / 60000);
+            const seconds = Math.floor((timeLeft % 60000) / 1000);
+            document.getElementById('timer').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+            
+            // End game if time is up
+            if (timeLeft <= 0 && !gameOver) {
+                gameOver = true;
+                setTimeout(() => {
+                    restartButton.style.display = 'block';
+                }, 2000);
+            }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             if (!gameOver) {
                 gameTime++;
-                if (Math.random() < 0.02 + (timeInMinutes * 0.01)) {
+                if (Math.random() < 0.02 + (timeInMinutes * 0.02)) {
                     targets.push(createTarget());
                 }
                 updateBullet();
