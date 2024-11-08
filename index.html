@@ -268,7 +268,7 @@
             document.getElementById('startButton').style.display = 'none';
             startTime = Date.now();
             gameStarted = true;
-            firstLoop = false;
+            gameOver = false;
             restartButton.style.display = 'none';
         }
             document.getElementById('startButton').style.display = 'none';
@@ -277,38 +277,34 @@
         }
         
         function gameLoop() {
-            // Update timer
-            const elapsedTime = Date.now() - startTime;
-            const timeLeft = Math.max(0, gameDuration - elapsedTime);
-            const minutes = Math.floor(timeLeft / 60000);
-            const seconds = Math.floor((timeLeft % 60000) / 1000);
-            document.getElementById('timer').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-            
-            // End game if time is up
-            if (timeLeft <= 0 && !gameOver) {
-                gameOver = true;
-                setTimeout(() => {
-                    restartButton.style.display = 'block';
-                }, 2000);
-            }
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (!gameOver && gameStarted && !firstLoop) {
+            
+            if (gameStarted && !gameOver) {
+                // Update timer
+                const elapsedTime = Date.now() - startTime;
+                const timeLeft = Math.max(0, gameDuration - elapsedTime);
+                const minutes = Math.floor(timeLeft / 60000);
+                const seconds = Math.floor((timeLeft % 60000) / 1000);
+                document.getElementById('timer').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+                
+                // End game if time is up
+                if (timeLeft <= 0) {
+                    gameOver = true;
+                    setTimeout(() => {
+                        restartButton.style.display = 'block';
+                    }, 2000);
+                }
+                
                 gameTime++;
                 if (Math.random() < 0.05 + (timeInMinutes * 0.05)) {
                     targets.push(createTarget());
                 }
                 updateBullet();
                 updateTargets();
-            }
-
-            if (gameStarted) {
-                if (gameStarted) {
                 drawSlingshot();
+                drawBullet();
+                drawTargets();
             }
-            }
-            drawBullet();
-            drawTargets();
             
             if (gameOver) {
                 updateAndDrawExplosion();
@@ -316,12 +312,13 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = 'white';
                 ctx.font = '48px Arial';
-                ctx.fillText('GAME OVER', canvas.width/2 - 120, canvas.height/2);
+                ctx.fillText('GAME OVER', canvas.width / 2 - 120, canvas.height / 2);
                 ctx.font = '24px Arial';
-                ctx.fillText('Final Score: ' + score, canvas.width/2 - 60, canvas.height/2 + 40);
+                ctx.fillText('Final Score: ' + score, canvas.width / 2 - 60, canvas.height / 2 + 40);
             }
-
+            
             requestAnimationFrame(gameLoop);
+        }
         }
 
         function restartGame() {
