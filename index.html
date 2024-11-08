@@ -113,9 +113,10 @@
         }
 
         function drawBomb(x, y, width, height) {
+            const bombRadius = width * 0.75;
             ctx.beginPath();
             ctx.fillStyle = '#ff4444';
-            ctx.arc(x + width/2, y + height/2, width/2, 0, Math.PI * 2);
+            ctx.arc(x + bombRadius, y + bombRadius, bombRadius, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
             ctx.strokeStyle = '#666';
@@ -125,7 +126,7 @@
             ctx.stroke();
             ctx.fillStyle = 'white';
             ctx.font = '12px Arial';
-            ctx.fillText('SAE', x + width/4, y + height/1.5);
+            ctx.fillText('SAE', x + bombRadius - ctx.measureText('SAE').width / 2, y + bombRadius + 5);
         }
 
         function drawSlingshot() {
