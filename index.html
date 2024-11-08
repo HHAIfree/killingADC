@@ -23,18 +23,22 @@
             display: none;
             margin: 10px auto;
         }
+        .signature {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 10px;
+            color: #888;
+        }
     </style>
 </head>
 <body>
-    <h1>Killing ADC</h1>
-    <h2>Designed by Helen S Huang</h2>
     <div id="gameContainer">
-        
-        <div id="score">Score: 0 <span id="timer" style="color: red;">Time Left: 2:00</span></div>
+        <div id="score">Score: 0</div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <button id="startButton" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 30px 50px; font-size: 30px;" onclick="startGame()">Start Game</button>
         <button class="restart-button" onclick="restartGame()">Play Again</button>
     </div>
+    <div class="signature">Helen S Huang</div>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
@@ -45,11 +49,6 @@
         const targets = [];
         let score = 0;
         let gameOver = false;
-        let startTime;
-        let gameStarted = false;
-        let firstLoop = true;
-        let timeInMinutes = 0;
-        const gameDuration = 2 * 60 * 1000; // 2 minutes in milliseconds
         let explosionParticles = [];
         let gameTime = 0;
 
@@ -75,30 +74,29 @@
         ];
 
         function drawCoin(x, y, width, height, label) {
-            const coinRadius = width * 0.75;
+            const coinWidth = width * 1.5;
+            const coinHeight = height * 1.5;
             
-            // Draw gold coin
-            ctx.beginPath();
-            ctx.arc(x + coinRadius, y + coinRadius, coinRadius, 0, Math.PI * 2);
             ctx.fillStyle = '#FFD700'; // Gold color
+            
+            // Draw the coin
+            ctx.beginPath();
+            ctx.arc(x + coinWidth / 2, y + coinHeight / 2, coinWidth / 2, 0, Math.PI * 2);
             ctx.fill();
-            ctx.strokeStyle = '#B8860B';
-            ctx.lineWidth = 3;
-            ctx.stroke();
             
             // Draw label text
             ctx.fillStyle = 'black';
             ctx.font = 'bold 14px Arial';
             const textWidth = ctx.measureText(label).width;
-            ctx.fillText(label, x + coinRadius - textWidth / 2, y + coinRadius + 5);
+            ctx.fillText(label, x + (coinWidth - textWidth) / 2, y + coinHeight * 0.6);
         }
 
         function createTarget() {
             const timeInMinutes = gameTime / (60 * 60);
-            const bombChance = Math.min(0.7, 0.3 + (timeInMinutes * 0.2));
-            const baseSpeed = 2 + Math.random() * 3 + (timeInMinutes * 3.0);
+            const bombChance = Math.min(0.5, 0.2 + (timeInMinutes * 0.1));
+            const baseSpeed = 1 + Math.random() * 2 + (timeInMinutes * 0.5);
             
-            if (Math.random() > Math.max(bombChance, 0.3)) {
+            if (Math.random() > bombChance) {
                 return {
                     x: Math.random() * (canvas.width - 80),
                     y: -45,
@@ -110,10 +108,10 @@
                 };
             } else {
                 return {
-                    x: Math.random() * (canvas.width - 30),
-                    y: -30,
-                    width: 30,
-                    height: 30,
+                    x: Math.random() * (canvas.width - 45),
+                    y: -45,
+                    width: 45,
+                    height: 45,
                     speed: baseSpeed * 1.2,
                     type: 'bomb',
                     label: 'SAE'
@@ -122,38 +120,37 @@
         }
 
         function drawBomb(x, y, width, height) {
-            const bombRadius = width * 0.75;
             ctx.beginPath();
             ctx.fillStyle = '#ff4444';
-            ctx.arc(x + bombRadius, y + bombRadius, bombRadius, 0, Math.PI * 2);
+            ctx.arc(x + width / 2, y + height / 2, width / 2, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
             ctx.strokeStyle = '#666';
             ctx.lineWidth = 3;
-            ctx.moveTo(x + width/2, y);
-            ctx.lineTo(x + width/2, y - height/3);
+            ctx.moveTo(x + width / 2, y);
+            ctx.lineTo(x + width / 2, y - height / 3);
             ctx.stroke();
             ctx.fillStyle = 'white';
             ctx.font = '12px Arial';
-            ctx.fillText('SAE', x + bombRadius - ctx.measureText('SAE').width / 2, y + bombRadius + 5);
+            ctx.fillText('SAE', x + width / 4, y + height / 1.5);
         }
 
         function drawSlingshot() {
             ctx.beginPath();
             ctx.strokeStyle = '#8B4513';
             ctx.lineWidth = 8;
-            ctx.moveTo(shooter.x - shooter.width/2, shooter.y + shooter.height);
-            ctx.lineTo(shooter.x - shooter.width/4, shooter.y);
-            ctx.moveTo(shooter.x + shooter.width/2, shooter.y + shooter.height);
-            ctx.lineTo(shooter.x + shooter.width/4, shooter.y);
+            ctx.moveTo(shooter.x - shooter.width / 2, shooter.y + shooter.height);
+            ctx.lineTo(shooter.x - shooter.width / 4, shooter.y);
+            ctx.moveTo(shooter.x + shooter.width / 2, shooter.y + shooter.height);
+            ctx.lineTo(shooter.x + shooter.width / 4, shooter.y);
             ctx.stroke();
             if (!bullet.active) {
                 ctx.beginPath();
                 ctx.strokeStyle = '#333';
                 ctx.lineWidth = 3;
-                ctx.moveTo(shooter.x - shooter.width/4, shooter.y);
+                ctx.moveTo(shooter.x - shooter.width / 4, shooter.y);
                 ctx.lineTo(shooter.x, shooter.y - 10);
-                ctx.lineTo(shooter.x + shooter.width/4, shooter.y);
+                ctx.lineTo(shooter.x + shooter.width / 4, shooter.y);
                 ctx.stroke();
                 ctx.fillStyle = 'black';
                 ctx.font = '16px Arial';
@@ -162,18 +159,12 @@
         }
 
         function checkCollision(bullet, target) {
-            if (target.type === 'coin') {
-                const coinRadius = target.width * 0.75;
-                return bullet.x >= target.x && 
-                       bullet.x <= target.x + coinRadius * 2 &&
-                       bullet.y >= target.y && 
-                       bullet.y <= target.y + coinRadius * 2;
-            } else {
-                return bullet.x >= target.x && 
-                       bullet.x <= target.x + target.width &&
-                       bullet.y >= target.y && 
-                       bullet.y <= target.y + target.height;
-            }
+            const targetWidth = target.type === 'coin' ? target.width * 1.5 : target.width;
+            const targetHeight = target.type === 'coin' ? target.height * 1.5 : target.height;
+            return bullet.x >= target.x && 
+                   bullet.x <= target.x + targetWidth &&
+                   bullet.y >= target.y && 
+                   bullet.y <= target.y + targetHeight;
         }
 
         function createExplosion(x, y) {
@@ -211,7 +202,7 @@
             if (bullet.active) {
                 ctx.fillStyle = 'black';
                 ctx.beginPath();
-                ctx.arc(bullet.x, bullet.y, bullet.width/2, 0, Math.PI * 2);
+                ctx.arc(bullet.x, bullet.y, bullet.width / 2, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
@@ -254,7 +245,7 @@
                             targets.splice(i, 1);
                         } else {
                             gameOver = true;
-                            createExplosion(target.x + target.width/2, target.y + target.height/2);
+                            createExplosion(target.x + target.width / 2, target.y + target.height / 2);
                             setTimeout(() => {
                                 restartButton.style.display = 'block';
                             }, 2000);
@@ -264,47 +255,29 @@
             }
         }
 
-        function startGame() {
-            document.getElementById('startButton').style.display = 'none';
-            startTime = Date.now();
-            gameStarted = true;
-            gameOver = false;
-            restartButton.style.display = 'none';
-        }
-            document.getElementById('startButton').style.display = 'none';
-            startTime = Date.now();
-            gameStarted = true;
-        }
-        
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            if (gameStarted && !gameOver) {
-                // Update timer
-                const elapsedTime = Date.now() - startTime;
-                const timeLeft = Math.max(0, gameDuration - elapsedTime);
-                const minutes = Math.floor(timeLeft / 60000);
-                const seconds = Math.floor((timeLeft % 60000) / 1000);
-                document.getElementById('timer').textContent = `Time Left: ${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-                
-                // End game if time is up
-                if (timeLeft <= 0) {
-                    gameOver = true;
-                    setTimeout(() => {
-                        restartButton.style.display = 'block';
-                    }, 2000);
-                }
-                
+
+            if (!gameOver) {
                 gameTime++;
-                if (Math.random() < 0.05 + (timeInMinutes * 0.05)) {
+                if (Math.random() < 0.02) {
                     targets.push(createTarget());
                 }
                 updateBullet();
                 updateTargets();
-                drawSlingshot();
-                drawBullet();
-                drawTargets();
+
+                if (gameTime >= 60 * 60 * 2) { // 2 minutes
+                    gameOver = true;
+                    setTimeout(() => {
+                        alert(`Time's up! Your final score is: ${score}. Would you like to play again?`);
+                        restartButton.style.display = 'block';
+                    }, 500);
+                }
             }
+
+            drawSlingshot();
+            drawBullet();
+            drawTargets();
             
             if (gameOver) {
                 updateAndDrawExplosion();
@@ -316,9 +289,8 @@
                 ctx.font = '24px Arial';
                 ctx.fillText('Final Score: ' + score, canvas.width / 2 - 60, canvas.height / 2 + 40);
             }
-            
+
             requestAnimationFrame(gameLoop);
-        }
         }
 
         function restartGame() {
