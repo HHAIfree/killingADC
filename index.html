@@ -1,194 +1,319 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADC 弹珠打砖头游戏</title>
+    <title>ADC Shooter Game</title>
     <style>
-        body {
-            background: #f0f0f0;
-            text-align: center;
-            font-family: Arial, sans-serif;
-            overflow: hidden;
-        }
         canvas {
-            background: #333;
-            display: block;
-            margin: 0 auto;
-            border: 2px solid #000;
+            border: 1px solid black;
+            background: #f0f0f0;
+        }
+        #gameContainer {
+            text-align: center;
+            padding: 20px;
+        }
+        #score {
+            font-size: 24px;
+            margin: 10px;
+        }
+        .restart-button {
+            padding: 10px 20px;
+            font-size: 18px;
+            display: none;
+            margin: 10px auto;
         }
     </style>
 </head>
 <body>
-    <h1>ADC 弹珠打砖头游戏</h1>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="gameContainer">
+        <div id="score">Score: 0</div>
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <button class="restart-button" onclick="restartGame()">Play Again</button>
+    </div>
+
     <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const restartButton = document.querySelector('.restart-button');
 
-        let paddleWidth = 100;
-        let paddleHeight = 20;
-        let paddleX = (canvas.width - paddleWidth) / 2;
-        
-        let ballRadius = 10;
-        let x = canvas.width / 2;
-        let y = canvas.height - 30;
-        let dx = 2;
-        let dy = -1.5;
-        
-        const brickRowCount = 3;
-        const brickColumnCount = 5;
-        const brickWidth = 150;
-        const brickHeight = 30;
-        const brickPadding = 10;
-        const brickOffsetTop = 0;
-        const brickOffsetLeft = 50;
-        let bricks = [];
-        let blueLabels = ["CD33", "CD30", "HER2", "CD22", "CD79b", "Nectin-4", "Trop-2", "BCMA", "CD19", "FRα", "Tissue Factor"];
-        let blueIndex = 0;
-
-        for (let c = 0; c < brickColumnCount; c++) {
-            bricks[c] = [];
-            for (let r = 0; r < brickRowCount; r++) {
-                let brickType = (r < 2) ? 'red' : 'blue';
-                let label = brickType === 'red' ? 'SEA' : blueLabels[blueIndex++];
-                bricks[c][r] = { x: 0, y: 0, status: 1, type: brickType, label: label };
-            }
-        }
-
+        const targets = [];
         let score = 0;
+        let gameOver = false;
+        let explosionParticles = [];
+        let gameTime = 0;
 
-        document.addEventListener("keydown", keyDownHandler);
-        document.addEventListener("keyup", keyUpHandler);
-        document.addEventListener("mousemove", mouseMoveHandler);
-        document.addEventListener("touchmove", touchMoveHandler);
+        const shooter = {
+            x: canvas.width / 2,
+            y: canvas.height - 80,
+            width: 80,
+            height: 60
+        };
 
-        function keyDownHandler(e) {
-            if (e.key === "Right" || e.key === "ArrowRight") {
-                paddleX += 7;
-            } else if (e.key === "Left" || e.key === "ArrowLeft") {
-                paddleX -= 7;
-            }
-        }
+        const bullet = {
+            x: shooter.x,
+            y: shooter.y,
+            width: 6,
+            height: 12,
+            active: false
+        };
 
-        function keyUpHandler(e) {
-            if (e.key === "Right" || e.key === "ArrowRight") {
-                rightPressed = false;
-            } else if (e.key === "Left" || e.key === "ArrowLeft") {
-                leftPressed = false;
-            }
-        }
+        const targetTypes = [
+            'CD33', 'CD30', 'HER2', 'CD22', 'CD79b', 
+            'Nectin-4', 'Trop-2', 'BCMA', 'CD19', 'FRα', 
+            'Tissue Factor'
+        ];
 
-        function mouseMoveHandler(e) {
-            let relativeX = e.clientX - canvas.offsetLeft;
-            if (relativeX > 0 && relativeX < canvas.width) {
-                paddleX = relativeX - paddleWidth / 2;
-            }
-        }
-
-        function touchMoveHandler(e) {
-            let relativeX = e.touches[0].clientX - canvas.offsetLeft;
-            if (relativeX > 0 && relativeX < canvas.width) {
-                paddleX = relativeX - paddleWidth / 2;
-            }
-        }
-
-        function drawPaddle() {
+        function drawCoin(x, y, width, height, label) {
+            const coinRadius = width * 0.75;
+            
+            // Draw gold coin
             ctx.beginPath();
-            ctx.rect(paddleX, canvas.height - paddleHeight, paddleWidth, paddleHeight);
-            ctx.fillStyle = "#0095DD";
+            ctx.arc(x + coinRadius, y + coinRadius, coinRadius, 0, Math.PI * 2);
+            ctx.fillStyle = '#FFD700'; // Gold color
             ctx.fill();
-            ctx.fillStyle = "#fff";
-            ctx.font = "16px Arial";
-            ctx.fillText("ADC", paddleX + paddleWidth / 2 - 16, canvas.height - 5);
-            ctx.closePath();
+            ctx.strokeStyle = '#B8860B';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // Draw label text
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 14px Arial';
+            const textWidth = ctx.measureText(label).width;
+            ctx.fillText(label, x + coinRadius - textWidth / 2, y + coinRadius + 5);
         }
 
-        function drawBall() {
+        function createTarget() {
+            const timeInMinutes = gameTime / (60 * 60);
+            const bombChance = Math.min(0.5, 0.2 + (timeInMinutes * 0.1));
+            const baseSpeed = 1 + Math.random() * 2 + (timeInMinutes * 0.5);
+            
+            if (Math.random() > bombChance) {
+                return {
+                    x: Math.random() * (canvas.width - 80),
+                    y: -45,
+                    width: 40,
+                    height: 30,
+                    speed: baseSpeed,
+                    type: 'coin',
+                    label: targetTypes[Math.floor(Math.random() * targetTypes.length)]
+                };
+            } else {
+                return {
+                    x: Math.random() * (canvas.width - 30),
+                    y: -30,
+                    width: 30,
+                    height: 30,
+                    speed: baseSpeed * 1.2,
+                    type: 'bomb',
+                    label: 'SAE'
+                };
+            }
+        }
+
+        function drawBomb(x, y, width, height) {
             ctx.beginPath();
-            ctx.arc(x, y, ballRadius, 0, Math.PI * 2);
-            ctx.fillStyle = "#0095DD";
+            ctx.fillStyle = '#ff4444';
+            ctx.arc(x + width/2, y + height/2, width/2, 0, Math.PI * 2);
             ctx.fill();
-            ctx.closePath();
+            ctx.beginPath();
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 3;
+            ctx.moveTo(x + width/2, y);
+            ctx.lineTo(x + width/2, y - height/3);
+            ctx.stroke();
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Arial';
+            ctx.fillText('SAE', x + width/4, y + height/1.5);
         }
 
-        function drawBricks() {
-            for (let c = 0; c < brickColumnCount; c++) {
-                for (let r = 0; r < brickRowCount; r++) {
-                    if (bricks[c][r].status === 1) {
-                        let brickX = c * (brickWidth + brickPadding) + brickOffsetLeft;
-                        let brickY = r * (brickHeight) + brickOffsetTop;
-                        bricks[c][r].x = brickX;
-                        bricks[c][r].y = brickY;
-                        ctx.beginPath();
-                        ctx.rect(brickX, brickY, brickWidth, brickHeight);
-                        ctx.fillStyle = bricks[c][r].type === 'red' ? "red" : "blue";
-                        ctx.fill();
-                        ctx.fillStyle = "#fff";
-                        ctx.font = "14px Arial";
-                        ctx.fillText(bricks[c][r].label, brickX + 10, brickY + 20);
-                        ctx.closePath();
-                    }
+        function drawSlingshot() {
+            ctx.beginPath();
+            ctx.strokeStyle = '#8B4513';
+            ctx.lineWidth = 8;
+            ctx.moveTo(shooter.x - shooter.width/2, shooter.y + shooter.height);
+            ctx.lineTo(shooter.x - shooter.width/4, shooter.y);
+            ctx.moveTo(shooter.x + shooter.width/2, shooter.y + shooter.height);
+            ctx.lineTo(shooter.x + shooter.width/4, shooter.y);
+            ctx.stroke();
+            if (!bullet.active) {
+                ctx.beginPath();
+                ctx.strokeStyle = '#333';
+                ctx.lineWidth = 3;
+                ctx.moveTo(shooter.x - shooter.width/4, shooter.y);
+                ctx.lineTo(shooter.x, shooter.y - 10);
+                ctx.lineTo(shooter.x + shooter.width/4, shooter.y);
+                ctx.stroke();
+                ctx.fillStyle = 'black';
+                ctx.font = '16px Arial';
+                ctx.fillText('ADC', shooter.x - 15, shooter.y - 20);
+            }
+        }
+
+        function checkCollision(bullet, target) {
+            if (target.type === 'coin') {
+                const coinRadius = target.width * 0.75;
+                return bullet.x >= target.x && 
+                       bullet.x <= target.x + coinRadius * 2 &&
+                       bullet.y >= target.y && 
+                       bullet.y <= target.y + coinRadius * 2;
+            } else {
+                return bullet.x >= target.x && 
+                       bullet.x <= target.x + target.width &&
+                       bullet.y >= target.y && 
+                       bullet.y <= target.y + target.height;
+            }
+        }
+
+        function createExplosion(x, y) {
+            for (let i = 0; i < 50; i++) {
+                explosionParticles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 60
+                });
+            }
+        }
+
+        function updateAndDrawExplosion() {
+            ctx.fillStyle = '#ff4444';
+            for (let i = explosionParticles.length - 1; i >= 0; i--) {
+                const particle = explosionParticles[i];
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life--;
+                
+                if (particle.life <= 0) {
+                    explosionParticles.splice(i, 1);
+                    continue;
+                }
+
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawBullet() {
+            if (bullet.active) {
+                ctx.fillStyle = 'black';
+                ctx.beginPath();
+                ctx.arc(bullet.x, bullet.y, bullet.width/2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function drawTargets() {
+            targets.forEach(target => {
+                if (target.type === 'coin') {
+                    drawCoin(target.x, target.y, target.width, target.height, target.label);
+                } else {
+                    drawBomb(target.x, target.y, target.width, target.height);
+                }
+            });
+        }
+
+        function updateBullet() {
+            if (bullet.active) {
+                bullet.y -= 7;
+                if (bullet.y < 0) {
+                    bullet.active = false;
                 }
             }
         }
 
-        function collisionDetection() {
-            for (let c = 0; c < brickColumnCount; c++) {
-                for (let r = 0; r < brickRowCount; r++) {
-                    let b = bricks[c][r];
-                    if (b.status === 1) {
-                        if (x > b.x && x < b.x + brickWidth && y > b.y && y < b.y + brickHeight) {
-                            dy = -dy;
-                            if (b.type === 'blue') {
-                                score++;
-                            } else {
-                                alert("Game Over! Your score: " + score);
-                                document.location.reload();
-                            }
-                            b.status = 0;
+        function updateTargets() {
+            for (let i = targets.length - 1; i >= 0; i--) {
+                const target = targets[i];
+                target.y += target.speed;
+
+                if (target.y > canvas.height) {
+                    targets.splice(i, 1);
+                    continue;
+                }
+
+                if (bullet.active) {
+                    if (checkCollision(bullet, target)) {
+                        bullet.active = false;
+                        if (target.type === 'coin') {
+                            score++;
+                            scoreElement.textContent = 'Score: ' + score;
+                            targets.splice(i, 1);
+                        } else {
+                            gameOver = true;
+                            createExplosion(target.x + target.width/2, target.y + target.height/2);
+                            setTimeout(() => {
+                                restartButton.style.display = 'block';
+                            }, 2000);
                         }
                     }
                 }
             }
         }
 
-        function drawScore() {
-            ctx.font = "16px Arial";
-            ctx.fillStyle = "#0095DD";
-            ctx.fillText("Score: " + score, 8, 20);
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (!gameOver) {
+                gameTime++;
+                if (Math.random() < 0.02) {
+                    targets.push(createTarget());
+                }
+                updateBullet();
+                updateTargets();
+            }
+
+            drawSlingshot();
+            drawBullet();
+            drawTargets();
+            
+            if (gameOver) {
+                updateAndDrawExplosion();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '48px Arial';
+                ctx.fillText('GAME OVER', canvas.width/2 - 120, canvas.height/2);
+                ctx.font = '24px Arial';
+                ctx.fillText('Final Score: ' + score, canvas.width/2 - 60, canvas.height/2 + 40);
+            }
+
+            requestAnimationFrame(gameLoop);
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawBricks();
-            drawBall();
-            drawPaddle();
-            drawScore();
-            collisionDetection();
+        function restartGame() {
+            score = 0;
+            gameOver = false;
+            gameTime = 0;
+            targets.length = 0;
+            explosionParticles.length = 0;
+            bullet.active = false;
+            scoreElement.textContent = 'Score: 0';
+            restartButton.style.display = 'none';
+        }
 
-            if (x + dx > canvas.width - ballRadius || x + dx < ballRadius) {
-                dx = -dx;
-            }
-            if (y + dy < ballRadius) {
-                dy = -dy;
-            } else if (y + dy > canvas.height - ballRadius) {
-                if (x > paddleX && x < paddleX + paddleWidth) {
-                    dy = -dy;
-                    dx += (Math.random() - 0.5) * 0.5; // Add some randomness to x-direction after hitting paddle
-                    dy *= 1.05; // Increase speed after hitting paddle
-                } else {
-                    alert("Game Over! Your score: " + score);
-                    document.location.reload();
+        canvas.addEventListener('mousemove', (e) => {
+            if (!gameOver) {
+                const rect = canvas.getBoundingClientRect();
+                shooter.x = e.clientX - rect.left;
+                if (!bullet.active) {
+                    bullet.x = shooter.x;
                 }
             }
+        });
 
-            x += dx;
-            y += dy;
-            requestAnimationFrame(draw);
-        }
+        canvas.addEventListener('click', () => {
+            if (!bullet.active && !gameOver) {
+                bullet.active = true;
+                bullet.x = shooter.x;
+                bullet.y = shooter.y;
+            }
+        });
 
-        draw();
+        gameLoop();
     </script>
 </body>
 </html>
