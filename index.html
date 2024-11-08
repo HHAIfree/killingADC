@@ -16,10 +16,12 @@
         #score {
             font-size: 24px;
             margin: 10px;
+            display: inline-block;
         }
         #timer {
             font-size: 24px;
             margin: 10px;
+            display: inline-block;
         }
         .restart-button {
             padding: 10px 20px;
@@ -101,7 +103,7 @@
         function createTarget() {
             const timeInMinutes = gameTime / (60 * 60);
             const bombChance = Math.min(0.5, 0.2 + (timeInMinutes * 0.1));
-            const baseSpeed = 3 + Math.random() * 4 + (timeInMinutes * 0.5); // Increased base speed for more challenge
+            const baseSpeed = 5 + Math.random() * 6 + (timeInMinutes * 0.5); // Further increased base speed for more challenge
             
             if (Math.random() > bombChance) {
                 return {
@@ -267,7 +269,7 @@
 
             if (!gameOver) {
                 gameTime++;
-                if (Math.random() < 0.05) { // Increased spawn rate for more challenge
+                if (Math.random() < 0.1) { // Further increased spawn rate for more challenge
                     targets.push(createTarget());
                 }
                 updateBullet();
