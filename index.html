@@ -29,9 +29,10 @@
     <h1>Killing ADC</h1>
     <h2>Designed by Helen S Huang</h2>
     <div id="gameContainer">
-        <button id="startButton" onclick="startGame()">Start Game</button>
+        
         <div id="score">Score: 0 <span id="timer" style="color: red;">Time Left: 2:00</span></div>
         <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <button id="startButton" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); padding: 20px 40px; font-size: 24px;" onclick="startGame()">Start Game</button>
         <button class="restart-button" onclick="restartGame()">Play Again</button>
     </div>
 
@@ -46,6 +47,7 @@
         let gameOver = false;
         let startTime;
         let gameStarted = false;
+        let timeInMinutes = 0;
         const gameDuration = 2 * 60 * 1000; // 2 minutes in milliseconds
         let explosionParticles = [];
         let gameTime = 0;
@@ -93,7 +95,7 @@
         function createTarget() {
             const timeInMinutes = gameTime / (60 * 60);
             const bombChance = Math.min(0.7, 0.3 + (timeInMinutes * 0.2));
-            const baseSpeed = 1 + Math.random() * 2 + (timeInMinutes * 2.0);
+            const baseSpeed = 2 + Math.random() * 3 + (timeInMinutes * 3.0);
             
             if (Math.random() > Math.max(bombChance, 0.3)) {
                 return {
@@ -286,7 +288,7 @@
 
             if (!gameOver && gameStarted) {
                 gameTime++;
-                if (Math.random() < 0.02 + (timeInMinutes * 0.02)) {
+                if (Math.random() < 0.05 + (timeInMinutes * 0.05)) {
                     targets.push(createTarget());
                 }
                 updateBullet();
