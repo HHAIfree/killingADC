@@ -9,9 +9,9 @@
             border: 1px solid black;
             background: #f0f0f0;
             width: 100%;
-            height: calc(100vh - 200px);
-            max-width: 800px;
-            max-height: 600px;
+            height: auto;
+            max-width: 600px;
+            aspect-ratio: 4 / 3;
         }
         #gameContainer {
             text-align: center;
@@ -46,7 +46,7 @@
     <div id="gameContainer">
         <div id="score">Score: 0</div>
         <div id="timer">Time Left: 2:00</div>
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <canvas id="gameCanvas" width="600" height="450"></canvas>
         <button class="restart-button" onclick="restartGame()">Play Again</button>
     </div>
     <div class="signature">Helen S Huang</div>
@@ -86,22 +86,21 @@
             'Tissue Factor'
         ];
 
-        function drawCoin(x, y, width, height, label) {
-            const coinWidth = width * 1.5;
-            const coinHeight = height * 1.5;
+        function drawCoin(x, y, diameter, label) {
+            const radius = diameter / 2;
             
             ctx.fillStyle = '#FFD700'; // Gold color
             
             // Draw the coin
             ctx.beginPath();
-            ctx.arc(x + coinWidth / 2, y + coinHeight / 2, coinWidth / 2, 0, Math.PI * 2);
+            ctx.arc(x + radius, y + radius, radius, 0, Math.PI * 2);
             ctx.fill();
             
             // Draw label text
             ctx.fillStyle = 'black';
             ctx.font = 'bold 14px Arial';
             const textWidth = ctx.measureText(label).width;
-            ctx.fillText(label, x + (coinWidth - textWidth) / 2, y + coinHeight * 0.6);
+            ctx.fillText(label, x + (diameter - textWidth) / 2, y + radius + 5);
         }
 
         function createTarget() {
@@ -113,8 +112,7 @@
                 return {
                     x: Math.random() * (canvas.width - 80),
                     y: -45,
-                    width: 40,
-                    height: 30,
+                    diameter: 60,
                     speed: baseSpeed,
                     type: 'coin',
                     label: targetTypes[Math.floor(Math.random() * targetTypes.length)]
@@ -123,8 +121,7 @@
                 return {
                     x: Math.random() * (canvas.width - 45),
                     y: -45,
-                    width: 45,
-                    height: 45,
+                    diameter: 60,
                     speed: baseSpeed * 1.2,
                     type: 'bomb',
                     label: 'SAE'
@@ -132,20 +129,21 @@
             }
         }
 
-        function drawBomb(x, y, width, height) {
+        function drawBomb(x, y, diameter) {
+            const radius = diameter / 2;
             ctx.beginPath();
             ctx.fillStyle = '#ff4444';
-            ctx.arc(x + width / 2, y + height / 2, width / 2, 0, Math.PI * 2);
+            ctx.arc(x + radius, y + radius, radius, 0, Math.PI * 2);
             ctx.fill();
             ctx.beginPath();
             ctx.strokeStyle = '#666';
             ctx.lineWidth = 3;
-            ctx.moveTo(x + width / 2, y);
-            ctx.lineTo(x + width / 2, y - height / 3);
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + radius, y - radius / 2);
             ctx.stroke();
             ctx.fillStyle = 'white';
             ctx.font = '12px Arial';
-            ctx.fillText('SAE', x + width / 4, y + height / 1.5);
+            ctx.fillText('SAE', x + radius / 2, y + radius);
         }
 
         function drawSlingshot() {
@@ -172,12 +170,11 @@
         }
 
         function checkCollision(bullet, target) {
-            const targetWidth = target.type === 'coin' ? target.width * 1.5 : target.width;
-            const targetHeight = target.type === 'coin' ? target.height * 1.5 : target.height;
+            const targetRadius = target.diameter / 2;
             return bullet.x >= target.x && 
-                   bullet.x <= target.x + targetWidth &&
+                   bullet.x <= target.x + target.diameter &&
                    bullet.y >= target.y && 
-                   bullet.y <= target.y + targetHeight;
+                   bullet.y <= target.y + target.diameter;
         }
 
         function createExplosion(x, y) {
@@ -223,9 +220,9 @@
         function drawTargets() {
             targets.forEach(target => {
                 if (target.type === 'coin') {
-                    drawCoin(target.x, target.y, target.width, target.height, target.label);
+                    drawCoin(target.x, target.y, target.diameter, target.label);
                 } else {
-                    drawBomb(target.x, target.y, target.width, target.height);
+                    drawBomb(target.x, target.y, target.diameter);
                 }
             });
         }
@@ -258,7 +255,7 @@
                             targets.splice(i, 1);
                         } else {
                             gameOver = true;
-                            createExplosion(target.x + target.width / 2, target.y + target.height / 2);
+                            createExplosion(target.x + target.diameter / 2, target.y + target.diameter / 2);
                             setTimeout(() => {
                                 restartButton.style.display = 'block';
                             }, 2000);
